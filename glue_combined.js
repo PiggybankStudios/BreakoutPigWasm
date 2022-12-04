@@ -634,7 +634,15 @@ function RequestFileAsync(requestId, filePathPntr)
 {
 	let filePath = wasmPntrToJsString(filePathPntr);
 	// console.log("RequestFileAsync(" + requestId + ", " + filePath + ")");
+	
 	let baseUrl = window.location.origin;
+	//TODO: Is there any better way we could do this without hardcoding the repository name here!?
+	let isRunningInGithubPages = baseUrl.includes("github.io");
+	if (isRunningInGithubPages)
+	{
+		baseUrl += baseUrl + "/BreakoutPigWasm";
+	}
+	
 	// console.log("base url: \"" + baseUrl + "\"");
 	fetch(baseUrl + "/" + filePath, { cache: "no-cache" })
 	.then(data => data.blob())
