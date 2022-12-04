@@ -640,7 +640,7 @@ function RequestFileAsync(requestId, filePathPntr)
 	let isRunningInGithubPages = baseUrl.includes("github.io");
 	if (isRunningInGithubPages)
 	{
-		baseUrl += baseUrl + "/BreakoutPigWasm";
+		baseUrl += "/BreakoutPigWasm";
 	}
 	
 	// console.log("base url: \"" + baseUrl + "\"");
