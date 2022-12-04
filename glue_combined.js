@@ -616,9 +616,9 @@ function DebugOutput(level, messagePtr)
 
 function GetCanvasSize(widthOutPntr, heightOutPntr)
 {
-	let pixelRatio = window.devicePixelRatio;
-	let canvasWidth = canvas.width / pixelRatio;
-	let canvasHeight = canvas.height / pixelRatio;
+	// let pixelRatio = window.devicePixelRatio;
+	let canvasWidth = canvas.width;// / pixelRatio;
+	let canvasHeight = canvas.height;// / pixelRatio;
 	// console.log("Canvas size: " + canvasWidth + "x" + canvasHeight + " (ratio " + pixelRatio + ")");
 	WritePntr_R32(widthOutPntr, canvasWidth);
 	WritePntr_R32(heightOutPntr, canvasHeight);
@@ -1077,13 +1077,26 @@ apiFuncs_opengl = {
 async function initialize()
 {
 	canvas = document.getElementsByTagName("canvas")[0];
-	canvasContainer = document.getElementById("canvas_container");
-	console.assert(canvas != null, "Couldn't find canvas DOM element!");
-	console.assert(canvasContainer != null, "Couldn't find canvas container DOM element!");
+	console.log(canvas);
+	
+	var desiredWidthInCSSPixels = 640;
+	var desiredHeightInCSSPixels = 480;
+	
+	// set the display size of the canvas.
+	canvas.style.width = desiredWidthInCSSPixels + "px";
+	canvas.style.height = desiredHeightInCSSPixels + "px";
+	
+	// set the size of the drawingBuffer
+	var devicePixelRatio = window.devicePixelRatio || 1;
+	canvas.width = desiredWidthInCSSPixels * devicePixelRatio;
+	canvas.height = desiredHeightInCSSPixels * devicePixelRatio;
+	
+	// canvasContainer = document.getElementById("canvas_container");
+	// console.assert(canvasContainer != null, "Couldn't find canvas container DOM element!");
 	
 	canvasContextGl = canvas.getContext("webgl2");
 	if (canvasContextGl === null) { console.error("Unable to initialize WebGL render context. Your browser or machine may not support it :("); return; }
-	// console.log(canvasContextGl);
+	console.log(canvasContextGl);
 	
 	wasmMemory = new WebAssembly.Memory({ initial: INITIAL_WASM_MEMORY_PAGE_COUNT });
 	let wasmEnvironment =
@@ -1105,8 +1118,9 @@ async function initialize()
 	window.addEventListener("mousemove", function(event)
 	{
 		let clientBounds = canvas.getBoundingClientRect();
-		mousePositionX = Math.round(event.clientX - clientBounds.left);
-		mousePositionY = Math.round(event.clientY - clientBounds.top);
+		let pixelRatio = window.devicePixelRatio;
+		mousePositionX = Math.round(event.clientX - clientBounds.left) * pixelRatio;
+		mousePositionY = Math.round(event.clientY - clientBounds.top) * pixelRatio;
 	});
 	window.addEventListener("keydown", function(event)
 	{
