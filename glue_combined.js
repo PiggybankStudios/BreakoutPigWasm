@@ -634,7 +634,9 @@ function RequestFileAsync(requestId, filePathPntr)
 {
 	let filePath = wasmPntrToJsString(filePathPntr);
 	// console.log("RequestFileAsync(" + requestId + ", " + filePath + ")");
-	fetch("http://localhost:8000/" + filePath, { cache: "no-cache" })
+	let baseUrl = window.location.origin;
+	// console.log("base url: \"" + baseUrl + "\"");
+	fetch(baseUrl + "/" + filePath, { cache: "no-cache" })
 	.then(data => data.blob())
 	.then(blob => blob.arrayBuffer())
 	.then(resultBuffer =>
@@ -758,19 +760,11 @@ function glBlendFuncSeparate(srcRGB, dstRGB, srcAlpha, dstAlpha)
 }
 function glDepthFunc(func)
 {
-	console.error("glDepthFunc is unimplemented!"); //TODO: Implement me!
-}
-function glAlphaFunc(func, ref)
-{
-	console.error("glAlphaFunc is unimplemented!"); //TODO: Implement me!
+	canvasContextGl.depthFunc(func);
 }
 function glFrontFace(mode)
 {
-	console.error("glFrontFace is unimplemented!"); //TODO: Implement me!
-}
-function glLineWidth(width)
-{
-	console.error("glLineWidth is unimplemented!"); //TODO: Implement me!
+	canvasContextGl.frontFace(mode);
 }
 function glGenFramebuffer()
 {
@@ -1022,9 +1016,7 @@ apiFuncs_opengl = {
 	glBlendFunc:                      glBlendFunc,
 	glBlendFuncSeparate:              glBlendFuncSeparate,
 	glDepthFunc:                      glDepthFunc,
-	glAlphaFunc:                      glAlphaFunc,
 	glFrontFace:                      glFrontFace,
-	glLineWidth:                      glLineWidth,
 	glGenFramebuffer:                 glGenFramebuffer,
 	glGenVertexArray:                 glGenVertexArray,
 	glGenTexture:                     glGenTexture,
