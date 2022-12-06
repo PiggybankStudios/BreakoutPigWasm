@@ -5,6 +5,8 @@
 // +--------------------------------------------------------------+
 var INITIAL_WASM_MEMORY_PAGE_COUNT = 7;
 var WASM_FILE_PATH = "MapEditor.wasm"
+var DesiredCanvasWidth = 640;
+var DesiredCanvasHeight = 480;
 
 var ArenaName_MainHeap  = 0;
 var ArenaName_TempArena = 1;
@@ -556,6 +558,10 @@ function js_cosf(value)
 {
 	return Math.cos(value);
 }
+function js_round(value)
+{
+	return Math.round(value);
+}
 function js_roundf(value)
 {
 	return Math.round(value);
@@ -569,18 +575,29 @@ function js_pow(base, exponent)
 {
 	return Math.pow(base, exponent);
 }
+function js_fminf(value1, value2)
+{
+	return Math.min(value1, value2);
+}
 
 apiFuncs_intrinsics = {
 	sinf:   js_sinf,
 	cosf:   js_cosf,
+	round:  js_round,
 	roundf: js_roundf,
 	ldexp:  js_ldexp,
 	pow:    js_pow,
+	fminf:  js_fminf,
 };
 
 // +--------------------------------------------------------------+
 // |                       Custom Functions                       |
 // +--------------------------------------------------------------+
+function AbortProgram()
+{
+	throw new Error("WebAssembly abort triggered");
+}
+
 function RequestMoreMemoryPages(numPages)
 {
 	// console.log("Memory growing by " + numPages + " pages");
@@ -590,6 +607,14 @@ function RequestMoreMemoryPages(numPages)
 function PrintoutStack()
 {
 	console.trace();
+}
+
+function HandleAssertionInJs(conditionStrPntr, messageStrPntr, functionNamePntr, filePathPntr, lineNumber, isLowLevel)
+{
+	let conditionStr = wasmPntrToJsString(conditionStrPntr);
+	let messageStr = wasmPntrToJsString(messageStrPntr);
+	let functionNameStr = wasmPntrToJsString(functionNamePntr);
+	let filePathStr = wasmPntrToJsString(filePathPntr);
 }
 
 function DebugOutput(level, messagePtr)
@@ -612,6 +637,11 @@ function DebugOutput(level, messagePtr)
 		if (level == 4) { colorString = "color: #66D9EF;"; } //DbgLevel_Other  MonokaiBlue
 		console.log("%c" + wasmPntrToJsString(messagePtr), colorString);
 	}
+}
+
+function ShowPopupMessage(messageStrPntr)
+{
+	window.alert(wasmPntrToJsString(messageStrPntr));
 }
 
 function GetCanvasSize(widthOutPntr, heightOutPntr)
@@ -663,18 +693,32 @@ function RequestFileAsync(requestId, filePathPntr)
 	});
 }
 
+//Returns num microseconds since program start (rounded and cast to BigInt)
+function GetPerfTime()
+{
+	//NOTE: This only works if the browser has been configured to give accurate time.
+	//      Because of exploits like Spectre and Meltdown, browser generally do not give
+	//      accurate time information by default. In firefox this can be configured
+	//      through the about:config page and disabling privacy.reduceTimerPrecision
+	return BigInt(Math.round(window.performance.now() * 1000));
+}
+
 function TestFunction()
 {
 	return jsStringToWasmPntr(ArenaName_MainHeap, "Hello from Javascript!");
 }
 
 apiFuncs_custom = {
+	AbortProgram: AbortProgram,
 	RequestMoreMemoryPages: RequestMoreMemoryPages,
 	PrintoutStack: PrintoutStack,
+	HandleAssertionInJs: HandleAssertionInJs,
 	DebugOutput: DebugOutput,
+	ShowPopupMessage: ShowPopupMessage,
 	GetCanvasSize: GetCanvasSize,
 	GetMousePosition: GetMousePosition,
 	RequestFileAsync: RequestFileAsync,
+	GetPerfTime: GetPerfTime,
 	TestFunction: TestFunction,
 };
 
@@ -1077,26 +1121,23 @@ apiFuncs_opengl = {
 async function initialize()
 {
 	canvas = document.getElementsByTagName("canvas")[0];
-	console.log(canvas);
-	
-	var desiredWidthInCSSPixels = 640;
-	var desiredHeightInCSSPixels = 480;
+	// console.log(canvas);
 	
 	// set the display size of the canvas.
-	canvas.style.width = desiredWidthInCSSPixels + "px";
-	canvas.style.height = desiredHeightInCSSPixels + "px";
+	canvas.style.width = DesiredCanvasWidth + "px";
+	canvas.style.height = DesiredCanvasHeight + "px";
 	
 	// set the size of the drawingBuffer
 	var devicePixelRatio = window.devicePixelRatio || 1;
-	canvas.width = desiredWidthInCSSPixels * devicePixelRatio;
-	canvas.height = desiredHeightInCSSPixels * devicePixelRatio;
+	canvas.width = DesiredCanvasWidth * devicePixelRatio;
+	canvas.height = DesiredCanvasHeight * devicePixelRatio;
 	
 	// canvasContainer = document.getElementById("canvas_container");
 	// console.assert(canvasContainer != null, "Couldn't find canvas container DOM element!");
 	
 	canvasContextGl = canvas.getContext("webgl2");
 	if (canvasContextGl === null) { console.error("Unable to initialize WebGL render context. Your browser or machine may not support it :("); return; }
-	console.log(canvasContextGl);
+	// console.log(canvasContextGl);
 	
 	wasmMemory = new WebAssembly.Memory({ initial: INITIAL_WASM_MEMORY_PAGE_COUNT });
 	let wasmEnvironment =
